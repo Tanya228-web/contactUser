@@ -8,13 +8,13 @@ dotenv.config();
 
 const app = express();
 app.use(express.json());
-app.use(cors());
-
-app.get("/api/data", (req, res) => {
-  res.json({ message: "CORS working!" });
-});
+app.use(cors({
+  origin: 'http://localhost:3000', 
+  credentials: true,
+}));
 
 app.use("/api", contactRouter);
+
 
 (async () => {
   try {
