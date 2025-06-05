@@ -1,7 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { z } from "zod";
 
+const resendSchema = z.object({
+  email: z.string().email("Invalid email address"),
+  resendMsg: z.string().min(5, "Resend message is too short"),
+});
 
 interface Contact {
   _id: string;
@@ -38,6 +43,36 @@ export default function ContactList() {
 
     fetchContacts();
   }, []);
+
+  const handleResend = async (email: string) => {
+    const resendMsg = "Hello again! This is a follow-up message from our team.";
+
+    const result = resendSchema.safeParse({ email, resendMsg });
+
+    if (!result.success) {
+      const errors = result.error.flatten().fieldErrors;
+      alert(errors.email?.[0] || errors.resendMsg?.[0] || "Validation error");
+      return;
+    }
+
+    try {
+      const res = await fetch("http://localhost:8000/api/resend", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, resendMsg }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) throw new Error(data.msg || "Failed to resend email");
+
+      alert("Resend email sent successfully!");
+    } catch (err: any) {
+      alert(`Error: ${err.message}`);
+    }
+  };
 
   return (
     <main className="min-h-screen bg-gray-900 text-white p-6">
@@ -80,9 +115,7 @@ export default function ContactList() {
                     <td className="px-4 py-2">
                       <button
                         className="bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded-xl"
-                        onClick={() =>
-                          alert(`Send clicked for ${contact.email}`)
-                        }
+                        onClick={() => handleResend(contact.email)}
                       >
                         Send
                       </button>
