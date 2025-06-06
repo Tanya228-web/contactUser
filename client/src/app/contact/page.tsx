@@ -1,6 +1,15 @@
-'use client';
+"use client";
 
 import { useState } from 'react';
+import { z } from 'zod';
+
+const contactSchema = z.object({
+  name: z.string().min(1, "Name is required"),
+  email: z.string().email("Invalid email address"),
+  phone: z.string().min(10, "Phone must be at least 10 digits"),
+  country: z.string().min(1, "Country is required"),
+  message: z.string().min(5, "Message must be at least 5 characters"),
+});
 
 interface FormData {
   name: string;
@@ -30,37 +39,38 @@ export default function Contact() {
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-  const { name, email, phone, country, message } = formData;
+    e.preventDefault();
 
-  if (!name || !email || !phone || !country || !message) {
-    setError('Please fill in all the fields.');
-    return;
-  }
+    const validation = contactSchema.safeParse(formData);
 
-  try {
-    const res = await fetch('http://localhost:8000/api/contact', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(formData),
-    });
-
-    if (!res.ok) {
-      const errorData = await res.json();
-      setError(errorData.message || 'Something went wrong.');
+    if (!validation.success) {
+      const firstError = Object.values(validation.error.flatten().fieldErrors)[0]?.[0];
+      setError(firstError || "Please correct the errors.");
       return;
     }
 
-    setError('');
-    setSubmitted(true);
-    setFormData({ name: '', email: '', phone: '', country: '', message: '' });
+    try {
+      const res = await fetch('http://localhost:8000/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      });
 
-    setTimeout(() => setSubmitted(false), 4000);
-  } catch (err) {
-    setError('Network error. Please try again.');
-  }
-};
+      if (!res.ok) {
+        const errorData = await res.json();
+        setError(errorData.message || 'Something went wrong.');
+        return;
+      }
 
+      setError('');
+      setSubmitted(true);
+      setFormData({ name: '', email: '', phone: '', country: '', message: '' });
+
+      setTimeout(() => setSubmitted(false), 4000);
+    } catch {
+      setError('Network error. Please try again.');
+    }
+  };
 
   return (
     <main className="min-h-screen bg-gray-900 text-white flex items-center justify-center px-4">
