@@ -7,8 +7,12 @@ const contactSchema = new mongoose.Schema(
     phone: { type: String, required: true },
     country: { type: String, required: true },
     message: { type: String, required: true },
-    status: { type: Boolean, required: true, default: false },
-
+    status: {
+      type: String,
+      enum: ["sent", "failed"],
+      required: true,
+      default:"failed"
+    },
   },
   { timestamps: true }
 );

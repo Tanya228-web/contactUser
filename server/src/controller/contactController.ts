@@ -15,7 +15,7 @@ export const postContact: any = async (req: Request, res: Response) => {
       phone,
       country,
       message,
-      status: false,
+      status: "failed",
     });
 
     const createdContactDetail = await contactDetail.save();
@@ -37,45 +37,42 @@ export const postContact: any = async (req: Request, res: Response) => {
       </div>
     `;
 
-    try{
-    await sendEmail({
-      to: email,
-      subject: "Thank You for Contacting Us!",
-      html: emailContent,
-    });
+    try {
+      await sendEmail({
+        to: email,
+        subject: "Thank You for Contacting Us!",
+        html: emailContent,
+      });
 
-    
-  const updatedContact = await Contact.findByIdAndUpdate(
-    createdContactDetail._id,
-    { status: true },
-    { new: true } 
-  );
+      const updatedContact = await Contact.findByIdAndUpdate(
+        createdContactDetail._id,
+        { status: "sent" },
+        { new: true }
+      );
 
-  
-  return res.status(200).json({
-    
-    message: "Form submitted and email sent.",
-    contact: updatedContact,
-  });
-} catch (error:any) {
-  return res.status(500).json({
-    message: "Form submitted but failed to update contact status.",
-    error: error.message,
-  });
-}
-
+      return res.status(200).json({
+        message: "Form submitted and email sent.",
+        contact: updatedContact,
+      });
+    } catch (error: any) {
+      return res.status(500).json({
+        message: "Form submitted but failed to update contact status.",
+        error: error.message,
+      });
+    }
   } catch (error: any) {
-    
-    return res.status(500).json({ message: "Server error", error: error.message });
+    return res
+      .status(500)
+      .json({ message: "Server error", error: error.message });
   }
 };
-
 
 export const getContacts: any = async (req: Request, res: Response) => {
   try {
     const userContacts = await Contact.find({});
+    console.log(userContacts)
 
-    if (userContacts.length === 0) {
+    if (!userContacts) {
       return res.status(400).json({ msg: "no contacts found." });
     }
 
@@ -143,4 +140,19 @@ export const sendMsg: any = async (req: Request, res: Response) => {
     console.error("Error sending email:", error);
     return res.status(500).json({ msg: "failed to send email." });
   }
+};
+
+export const statusUpdate: any = async (req: Request, res: Response) => {
+  const { id, status } = req.body;
+  
+  if (!id || !status) {
+    return res.status(400).json({ msg: "invalid data" });
+  }
+
+  const userStatus = await Contact.findByIdAndUpdate(id, {status:status}, { new: true });
+  console.log(userStatus)
+  if (!userStatus) {
+    return res.status(401).json({ msg: "user status not updated" });
+  }
+  return res.status(200).json({ msg: "user status updated", data: userStatus });
 };

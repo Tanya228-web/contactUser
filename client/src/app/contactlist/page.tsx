@@ -15,6 +15,7 @@ interface Contact {
   phone: string;
   country: string;
   message: string;
+  status: string;
   createdAt?: string;
 }
 
@@ -74,6 +75,24 @@ export default function ContactList() {
     }
   };
 
+  const handleStatus = async (status: string, id: string) => {
+    try {
+      const res = await fetch("http://localhost:8000/api/statusupdate", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ status, id }),
+      });
+      const data = await res.json();
+      
+      setContacts((prev) =>prev.map((contact) =>contact._id === id ? { ...contact, status } : contact )
+      );
+    } catch (err: any) {
+      alert(`Error: ${err.message}`);
+    }
+  };
+
   return (
     <main className="min-h-screen bg-gray-900 text-white p-6">
       <div className="max-w-6xl mx-auto bg-gray-800 p-6 rounded-2xl shadow-lg">
@@ -98,6 +117,8 @@ export default function ContactList() {
                   <th className="px-4 py-2 text-left">Phone</th>
                   <th className="px-4 py-2 text-left">Country</th>
                   <th className="px-4 py-2 text-left">Message</th>
+                  <th className="px-4 py-2 text-left">Status</th>
+
                   <th className="px-4 py-2 text-left">Action</th>
                 </tr>
               </thead>
@@ -112,6 +133,19 @@ export default function ContactList() {
                     <td className="px-4 py-2">{contact.phone}</td>
                     <td className="px-4 py-2">{contact.country}</td>
                     <td className="px-4 py-2">{contact.message}</td>
+                    <td className="px-4 py-2">
+                      <select
+                        value={contact.status}
+                        onChange={(e) =>
+                          handleStatus(e.target.value, contact._id)
+                        }
+                        className="bg-gray-800 text-white rounded-md p-1"
+                      >
+                        <option value="sent">sent</option>
+                        <option value="failed">failed</option>
+                      </select>
+                    </td>
+
                     <td className="px-4 py-2">
                       <button
                         className="bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded-xl"
