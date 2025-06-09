@@ -13,6 +13,8 @@
     "postcss": "^8.5.4",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "react-modal": "^3.16.3",
+    "react-model": "^4.3.1",
     "zod": "^3.25.51"
   },
   "devDependencies": {
@@ -20,6 +22,7 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/react-modal": "^3.16.3",
     "tailwindcss": "^4.1.8",
     "typescript": "^5"
   }

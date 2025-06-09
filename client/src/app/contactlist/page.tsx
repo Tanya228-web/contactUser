@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { z } from "zod";
+import Modal from "react-modal";
 
 const resendSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -23,6 +24,14 @@ export default function ContactList() {
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
+  const [modalIsOpen, setModalIsOpen] = useState(false);
+  const [selectedEmail, setSelectedEmail] = useState<string | null>(null);
+  const [customMessage, setCustomMessage] = useState("");
+
+  useEffect(() => {
+  
+    Modal.setAppElement(document.body);
+  }, []);
 
   useEffect(() => {
     const fetchContacts = async () => {
@@ -45,10 +54,11 @@ export default function ContactList() {
     fetchContacts();
   }, []);
 
-  const handleResend = async (email: string) => {
-    const resendMsg = "Hello again! This is a follow-up message from our team.";
-
-    const result = resendSchema.safeParse({ email, resendMsg });
+  const handleResend = async () => {
+    const result = resendSchema.safeParse({
+      email: selectedEmail,
+      resendMsg: customMessage,
+    });
 
     if (!result.success) {
       const errors = result.error.flatten().fieldErrors;
@@ -59,10 +69,11 @@ export default function ContactList() {
     try {
       const res = await fetch("http://localhost:8000/api/resend", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email, resendMsg }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: selectedEmail,
+          resendMsg: customMessage,
+        }),
       });
 
       const data = await res.json();
@@ -70,6 +81,8 @@ export default function ContactList() {
       if (!res.ok) throw new Error(data.msg || "Failed to resend email");
 
       alert("Resend email sent successfully!");
+      setModalIsOpen(false);
+      setCustomMessage("");
     } catch (err: any) {
       alert(`Error: ${err.message}`);
     }
@@ -79,14 +92,16 @@ export default function ContactList() {
     try {
       const res = await fetch("http://localhost:8000/api/statusupdate", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status, id }),
       });
-      const data = await res.json();
-      
-      setContacts((prev) =>prev.map((contact) =>contact._id === id ? { ...contact, status } : contact )
+
+      await res.json();
+
+      setContacts((prev) =>
+        prev.map((contact) =>
+          contact._id === id ? { ...contact, status } : contact
+        )
       );
     } catch (err: any) {
       alert(`Error: ${err.message}`);
@@ -118,7 +133,6 @@ export default function ContactList() {
                   <th className="px-4 py-2 text-left">Country</th>
                   <th className="px-4 py-2 text-left">Message</th>
                   <th className="px-4 py-2 text-left">Status</th>
-
                   <th className="px-4 py-2 text-left">Action</th>
                 </tr>
               </thead>
@@ -145,11 +159,14 @@ export default function ContactList() {
                         <option value="failed">failed</option>
                       </select>
                     </td>
-
                     <td className="px-4 py-2">
                       <button
                         className="bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded-xl"
-                        onClick={() => handleResend(contact.email)}
+                        onClick={() => {
+                          setSelectedEmail(contact.email);
+                          setCustomMessage("");
+                          setModalIsOpen(true);
+                        }}
                       >
                         Send
                       </button>
@@ -161,6 +178,43 @@ export default function ContactList() {
           </div>
         )}
       </div>
+
+      <Modal
+        isOpen={modalIsOpen}
+        onRequestClose={() => setModalIsOpen(false)}
+        contentLabel="Confirm Resend"
+        className="bg-white p-6 max-w-lg mx-auto mt-40 rounded-lg shadow-lg"
+        overlayClassName="fixed inset-0 bg-black bg-opacity-50"
+      >
+        <h2 className="text-xl font-bold mb-4 text-black">Resend Email</h2>
+        <p className="text-black mb-2">
+          Are you sure you want to resend the email to{" "}
+          <strong>{selectedEmail}</strong>?
+        </p>
+
+        <textarea
+          rows={4}
+          value={customMessage}
+          onChange={(e) => setCustomMessage(e.target.value)}
+          className="w-full p-2 border border-gray-300 rounded mb-4 text-black"
+          placeholder="Enter your custom message..."
+        />
+
+        <div className="flex justify-end gap-4">
+          <button
+            onClick={() => setModalIsOpen(false)}
+            className="bg-gray-300 text-black px-4 py-2 rounded"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleResend}
+            className="bg-purple-600 text-white px-4 py-2 rounded"
+          >
+            Confirm Resend
+          </button>
+        </div>
+      </Modal>
     </main>
   );
 }
